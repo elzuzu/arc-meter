@@ -1,0 +1,18 @@
+{
+  "name": "arc-meter",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "What computation costs on Arc, in dollars, measured on chain.",
+  "license": "MIT",
+  "scripts": {
+    "build": "cd contracts && forge build",
+    "test": "cd contracts && forge test",
+    "deploy": "node scripts/deploy.mjs",
+    "measure": "node scripts/measure.mjs",
+    "verify-deployment": "node scripts/verify-deployment.mjs"
+  },
+  "dependencies": {
+    "viem": "^2.56.5"
+  }
+}

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ArcMeter</title>
+<style>
+  :root {
+    --bg: #fbfbfa; --fg: #1a1a18; --muted: #6b6b66; --line: #e2e1dd;
+    --card: #ffffff; --accent: #0f6f5c; --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12120f; --fg: #eceae4; --muted: #9a978e; --line: #2b2a26;
+      --card: #191815; --accent: #4fd1b0;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12120f; --fg: #eceae4; --muted: #9a978e; --line: #2b2a26;
+    --card: #191815; --accent: #4fd1b0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0 16px 64px; background: var(--bg); color: var(--fg);
+    font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 860px; margin: 0 auto; }
+  header { padding: 56px 0 8px; }
+  h1 { font-size: clamp(2rem, 6vw, 3rem); margin: 0 0 8px; letter-spacing: -0.02em; }
+  .lede { color: var(--muted); font-size: 1.05rem; margin: 0 0 8px; max-width: 58ch; }
+  .chip {
+    display: inline-block; font: 600 12px/1 var(--mono); letter-spacing: .06em;
+    text-transform: uppercase; color: var(--accent); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 11px; margin-bottom: 20px;
+  }
+  .claim {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px 22px; margin: 28px 0;
+  }
+  .claim code { font-family: var(--mono); font-size: .95em; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { text-align: right; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+  th:first-child, td:first-child { text-align: left; }
+  th { font: 600 11px/1 var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+  td { font-family: var(--mono); font-size: .9rem; }
+  td.op { font-weight: 600; }
+  .status { color: var(--muted); font-size: .85rem; margin-top: 14px; font-family: var(--mono); }
+  a { color: var(--accent); }
+  footer { margin-top: 44px; color: var(--muted); font-size: .85rem; border-top: 1px solid var(--line); padding-top: 20px; }
+  .wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="chip">Arc Mainnet · chain 5042</div>
+    <h1>ArcMeter</h1>
+    <p class="lede">What computation costs on Arc, in dollars, measured on chain.</p>
+  </header>
+
+  <div class="claim">
+    <p style="margin:0 0 10px">
+      Arc's gas token is USDC, carried at the EVM level with <strong>18 decimals</strong>. So
+      <code>gasUsed × tx.gasprice</code> is a dollar amount, directly — there is no price feed
+      anywhere in that expression.
+    </p>
+    <p style="margin:0;color:var(--muted)">
+      On a chain whose gas token floats, a contract that wants to know what it just cost in dollars
+      needs an oracle, and inherits its staleness and its failure modes. Here the unit of gas is the
+      unit of account. Every figure below was read from the contract just now, in your browser.
+    </p>
+  </div>
+
+  <div class="wrap">
+    <table>
+      <thead>
+        <tr><th>Operation</th><th>Gas</th><th>Cost (18 dec)</th><th>Cost (6 dec)</th><th>Reported</th></tr>
+      </thead>
+      <tbody id="rows"><tr><td colspan="5" style="text-align:center;color:var(--muted)">reading the chain…</td></tr></tbody>
+    </table>
+  </div>
+  <p class="status" id="status"></p>
+
+  <footer>
+    Contract
+    <a id="ex" href="https://explorer.arc.io/address/0x1f4e93ccc63efe4b3edf8a7dc93f57d7132ca9ba">0x1f4e93cc…ca9ba</a>
+    · <a href="https://github.com/elzuzu/arc-meter">source</a>
+    · permissionless: anyone can refresh a sample with <code>measureAll()</code>, and none can be edited or deleted.
+    <br /><br />
+    <code>baseline</code> is the measurement harness itself — two <code>gasleft()</code> reads with
+    nothing between them. It is published rather than subtracted, so you can subtract it yourself.
+  </footer>
+</main>
+
+<script type="module">
+const RPCS = ['https://rpc.mainnet.arc.io', 'https://rpc.drpc.mainnet.arc.io', 'https://rpc.quicknode.mainnet.arc.io'];
+const CONTRACT = '0x1f4e93ccc63efe4b3edf8a7dc93f57d7132ca9ba';
+const OPS = ['baseline','sstore.cold','sstore.warm','sload.cold','sload.warm','keccak256.32b','ecrecover','staticcall.balanceOf'];
+
+/** ASCII string -> right-padded bytes32, which is how Solidity stores a short string literal. */
+const toBytes32 = (s) => '0x' + [...s].map((c) => c.charCodeAt(0).toString(16).padStart(2, '0')).join('').padEnd(64, '0');
+
+/** `latest(bytes32)` returns the struct as four padded words: timestamp, gasUsed, gasPrice, reporter. */
+const SEL_LATEST = '0x79feb107';
+
+async function rpc(method, params) {
+  let last;
+  for (const url of RPCS) {
+    try {
+      const r = await fetch(url, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+      });
+      const j = await r.json();
+      if (j.error) throw new Error(j.error.message);
+      return j.result;
+    } catch (e) { last = e; }
+  }
+  throw last;
+}
+
+/** Format a native-denominated bigint (18 decimals) without floating point. */
+function fmt(v, places) {
+  const whole = v / 10n ** 18n;
+  const frac = (v % 10n ** 18n).toString().padStart(18, '0').slice(0, places);
+  return `${whole}.${frac}`;
+}
+
+async function load() {
+  const rows = document.getElementById('rows');
+  const status = document.getElementById('status');
+  try {
+    const out = [];
+    for (const op of OPS) {
+      const data = SEL_LATEST + toBytes32(op).slice(2);
+      const res = await rpc('eth_call', [{ to: CONTRACT, data }, 'latest']);
+      if (!res || res === '0x') { out.push({ op, empty: true }); continue; }
+      const word = (i) => BigInt('0x' + res.slice(2 + i * 64, 66 + i * 64));
+      const [ts, gas, price] = [word(0), word(1), word(2)];
+      out.push({ op, ts, gas, native: gas * price });
+    }
+    rows.innerHTML = out.map((r) => r.empty
+      ? `<tr><td class="op">${r.op}</td><td colspan="4" style="color:var(--muted)">not measured yet</td></tr>`
+      : `<tr><td class="op">${r.op}</td><td>${r.gas.toLocaleString('en-US')}</td>` +
+        `<td>${fmt(r.native, 8)}</td><td>${fmt(r.native / 10n ** 12n, 6)}</td>` +
+        `<td>${new Date(Number(r.ts) * 1000).toISOString().replace('T', ' ').slice(0, 16)}</td></tr>`
+    ).join('');
+    const head = await rpc('eth_blockNumber', []);
+    status.textContent = `read live at block #${Number(head).toLocaleString('en-US')} — refresh to re-read`;
+  } catch (e) {
+    rows.innerHTML = `<tr><td colspan="5" style="color:var(--muted);text-align:center">could not reach Arc: ${e.message}</td></tr>`;
+    status.textContent = 'retrying when this tab returns to the foreground';
+    const again = () => { if (!document.hidden) load(); };
+    document.addEventListener('visibilitychange', again, { once: true });
+    window.addEventListener('online', again, { once: true });
+  }
+}
+load();
+</script>
+</body>
+</html>
