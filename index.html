@@ -119,10 +119,19 @@ async function rpc(method, params) {
   throw last;
 }
 
-/** Format a native-denominated bigint (18 decimals) without floating point. */
-function fmt(v, places) {
-  const whole = v / 10n ** 18n;
-  const frac = (v % 10n ** 18n).toString().padStart(18, '0').slice(0, places);
+/**
+ * Format a fixed-point bigint without floating point.
+ *
+ * `decimals` says how many the value carries, which is not always 18 here: the same cost is shown
+ * in Arc's native 18-decimal form and in the 6-decimal form the USDC predeploy reports. The first
+ * version of this page hardcoded 18 and applied it to the already-scaled six-decimal value,
+ * dividing twice and printing 0.000000 for every row — the exact decimal confusion this project
+ * exists to make visible.
+ */
+function fmt(v, decimals, places) {
+  const unit = 10n ** BigInt(decimals);
+  const whole = v / unit;
+  const frac = (v % unit).toString().padStart(decimals, '0').slice(0, places);
   return `${whole}.${frac}`;
 }
 
@@ -142,7 +151,7 @@ async function load() {
     rows.innerHTML = out.map((r) => r.empty
       ? `<tr><td class="op">${r.op}</td><td colspan="4" style="color:var(--muted)">not measured yet</td></tr>`
       : `<tr><td class="op">${r.op}</td><td>${r.gas.toLocaleString('en-US')}</td>` +
-        `<td>${fmt(r.native, 8)}</td><td>${fmt(r.native / 10n ** 12n, 6)}</td>` +
+        `<td>${fmt(r.native, 18, 8)}</td><td>${fmt(r.native / 10n ** 12n, 6, 6)}</td>` +
         `<td>${new Date(Number(r.ts) * 1000).toISOString().replace('T', ' ').slice(0, 16)}</td></tr>`
     ).join('');
     const head = await rpc('eth_blockNumber', []);
