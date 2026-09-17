@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><style>
+ html,body{margin:0;padding:0}
+ body{width:1200px;height:630px;display:flex;flex-direction:column;justify-content:center;padding:0 82px;
+   background:linear-gradient(120deg,#0d1b17 0%,#123329 60%,#0a1512 100%);color:#eef5f1;box-sizing:border-box;
+   font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+ h1{font:700 78px/1 ui-sans-serif;margin:0 0 14px;letter-spacing:-.03em}
+ p{font:400 27px/1.45 ui-sans-serif;color:#b9d6cb;margin:0 0 34px;max-width:900px}
+ code{font-family:ui-monospace,Menlo,monospace;color:#4fd1b0}
+ table{border-collapse:collapse;font-family:ui-monospace,Menlo,monospace;font-size:22px}
+ td{padding:7px 30px 7px 0;color:#eef5f1}
+ td.o{color:#8fb5a8}
+ .f{position:absolute;bottom:44px;left:82px;font:500 19px/1 ui-monospace,Menlo,monospace;color:#6f9488}
+</style><body>
+ <h1>ArcMeter</h1>
+ <p>Arc's gas token is 18-decimal USDC, so <code>gasUsed × tx.gasprice</code> is a dollar amount.
+    No price feed. Measured on chain, by anyone, forever.</p>
+ <table>
+  <tr><td class="o">sstore.cold</td><td>22,113 gas</td><td>$0.00044226</td></tr>
+  <tr><td class="o">sload.cold</td><td>2,115 gas</td><td>$0.00004230</td></tr>
+  <tr><td class="o">ecrecover</td><td>3,331 gas</td><td>$0.00006662</td></tr>
+  <tr><td class="o">staticcall → balanceOf</td><td>10,761 gas</td><td>$0.00021522</td></tr>
+ </table>
+ <div class="f">Arc Mainnet 5042 · 0x1f4e93cc…ca9ba · elzuzu.github.io/arc-meter</div>
+</body>

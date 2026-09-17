@@ -1,0 +1,26 @@
+Solo builder, working under the handle elzuzu.
+
+ArcMeter is my second distinct submission, alongside ArcPay (BUIDL 48819). They share only a fact
+about Arc — that its native gas asset carries 18 decimals while the USDC predeploy reports 6 —
+which is a property of the chain, not of either project. ArcPay is a payment and escrow rail;
+ArcMeter is instrumentation.
+
+Evidence of how it was built, rather than claims about it:
+
+The first version of the contract was wrong in a way that was easy to ship. Its cold SLOAD
+benchmark reported 7 gas against a specified 2,100, because at 200 optimizer runs `pop(sload(slot))`
+has no observable effect and was deleted outright — the benchmark was measuring its own harness.
+The tests caught it because they assert the properties the contract claims, not merely that nothing
+reverts. A suite written the easy way would have passed the broken version.
+
+Three of the four selectors in the verification script were guessed and all three were wrong. A
+wrong selector returns empty calldata, which a lenient decoder reports as zero rather than an error,
+so the script would have printed confident passes while checking nothing. They use `cast sig` now.
+
+The dashboard shipped with its six-decimal column reading 0.000000 on every row, because the
+formatter hardcoded 18 decimals and received a value already scaled by 1e12 — precisely the decimal
+confusion this project exists to make visible, on its own front page.
+
+Development was AI-assisted. Every figure was measured against Arc Mainnet rather than asserted,
+and `scripts/verify-deployment.mjs` re-derives all seventeen from the chain given only the contract
+address, so none of it has to be taken on trust.
