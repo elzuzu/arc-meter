@@ -57,6 +57,17 @@ contract ArcMeter {
     /// @dev Bumped before each cold measurement so the derived slot is genuinely untouched.
     uint256 private _nonce;
 
+    /**
+     * @dev Sink for measured results.
+     *
+     * Without it the optimizer deletes the very operations being measured. `pop(sload(slot))` has no
+     * observable effect, so at 200 runs it was removed outright and the cold SLOAD benchmark
+     * reported 7 gas — the cost of the two `gasleft()` reads and nothing else. Assigning each result
+     * here, *after* the measurement window closes, makes the work observable and therefore
+     * mandatory, without adding anything to the reading itself.
+     */
+    uint256 private _sink;
+
     /// @dev Warmed on purpose by the warm benchmarks. Its value carries no meaning.
     uint256 private _warmSlot = 1;
 
@@ -113,53 +124,58 @@ contract ArcMeter {
 
     function _measureSloadCold() private returns (uint256 used) {
         uint256 slot = uint256(keccak256(abi.encode(++_nonce, OP_SLOAD_COLD)));
+        uint256 v;
         uint256 start = gasleft();
         assembly {
-            pop(sload(slot))
+            v := sload(slot)
         }
         used = start - gasleft();
+        _sink = v;
     }
 
-    function _measureSloadWarm() private view returns (uint256 used) {
+    function _measureSloadWarm() private returns (uint256 used) {
         uint256 warmed = _warmSlot;
         uint256 start = gasleft();
         warmed = _warmSlot;
         used = start - gasleft();
-        warmed;
+        _sink = warmed;
     }
 
-    function _measureKeccak() private view returns (uint256 used) {
+    function _measureKeccak() private returns (uint256 used) {
         uint256 seed = _nonce;
+        uint256 h;
         assembly {
             mstore(0x00, seed)
             let start := gas()
-            pop(keccak256(0x00, 0x20))
+            h := keccak256(0x00, 0x20)
             used := sub(start, gas())
         }
+        _sink = h;
     }
 
     /**
      * @dev A fixed, valid secp256k1 signature so the precompile does the full recovery rather than
      *      failing early. The message and key are arbitrary and public; nothing is secret here.
      */
-    function _measureEcrecover() private view returns (uint256 used) {
+    function _measureEcrecover() private returns (uint256 used) {
         bytes32 digest = 0x15fa4e0a41f4e0b6e3f0a8e3e5a6d0dd6b5c1b6b4e78e5f6ab0b0a1b2c3d4e5f;
         uint8 v = 28;
         bytes32 r = 0xef4d1418765ba1c2f40957bd2cea828aea016337671d00d9cfc95f4205454137;
         bytes32 s = 0x53a867d5723c7fda0f19a1c1ec454b31a00661e0fe8472efe6982ce3299ccc2c;
         uint256 start = gasleft();
-        ecrecover(digest, v, r, s);
+        address recovered = ecrecover(digest, v, r, s);
         used = start - gasleft();
+        _sink = uint256(uint160(recovered));
     }
 
     /// @dev External staticcall to the USDC predeploy. Measures a real cross-contract read on Arc.
-    function _measureStaticcall() private view returns (uint256 used) {
+    function _measureStaticcall() private returns (uint256 used) {
         address token = USDC_ERC20;
-        address who = address(this);
+        bytes memory payload = abi.encodeWithSignature("balanceOf(address)", address(this));
         uint256 start = gasleft();
-        (bool ok,) = token.staticcall(abi.encodeWithSignature("balanceOf(address)", who));
+        (bool ok, bytes memory ret) = token.staticcall(payload);
         used = start - gasleft();
-        ok;
+        _sink = ok && ret.length >= 32 ? abi.decode(ret, (uint256)) : 0;
     }
 
     /**
