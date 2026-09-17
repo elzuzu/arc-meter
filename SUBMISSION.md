@@ -108,7 +108,7 @@ Backup: Discord `lextulhor`. Email `arc@elzuzu.ch.eu.org`.
 | Contract | `0x1f4e93ccc63efe4b3edf8a7dc93f57d7132ca9ba` |
 | Chain | Arc Mainnet, 5042 |
 | Deploy tx | `0x4d07061d226de7ea8dcfc6610a474108c8b9db9b0df6bc548580a9421bd7ffd4` |
-| Block | 21302797 |
+| Block | 21302813 (read from the receipt; an earlier 21302797 here was wrong and had been copied into the submitted form — see [`docs/submitted-freetext.txt`](docs/submitted-freetext.txt)) |
 | Gas used | 950,308 (0.01900616 USDC at 20 gwei) |
 | Seeding tx | `0x843c5da7b1d9dad5c1bb843738653e051ba0216cd741fe3e934398ab877caa32`, block 21302857 |
 | Tests | 13/13 |

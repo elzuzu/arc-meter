@@ -1,0 +1,40 @@
+Verbatim archive of the two form fields whose text was written on the spot, with no prepared source
+in this repository. Recorded so the submission can be checked against something, rather than
+against memory.
+
+================================================================================
+FIELD: "In two sentences, what does your project do?"
+Single line, no leading or trailing whitespace.
+================================================================================
+ArcMeter is a permissionless, append-only registry of what specific EVM operations actually cost on Arc, measured from inside transactions rather than copied out of a table. Because Arc's gas token is USDC carried with 18 decimals, every sample is published as both a gas count and a dollar amount, with no price feed anywhere in the calculation.
+
+================================================================================
+FIELD: "Anything else we should see?"  (optional)
+Blank second line; three commands on consecutive lines; blank line; closing paragraph.
+Three spaces before each trailing "#" comment. ASCII quotes. No trailing newline.
+================================================================================
+Everything is re-derivable from the chain:
+
+cast call 0x1f4e93ccc63efe4b3edf8a7dc93f57d7132ca9ba "latestAll()" --rpc-url https://rpc.mainnet.arc.io
+git clone https://github.com/elzuzu/arc-meter && cd arc-meter/contracts && forge test   # 13 tests
+node ../scripts/verify-deployment.mjs   # 17 checks, re-derived from the chain given only the address
+
+Deploy tx 0x4d07061d226de7ea8dcfc6610a474108c8b9db9b0df6bc548580a9421bd7ffd4, block 21302797, 950,308 gas (0.01900616 USDC at 20 gwei). Seeding tx 0x843c5da7b1d9dad5c1bb843738653e051ba0216cd741fe3e934398ab877caa32, block 21302857.
+
+================================================================================
+KNOWN ERROR IN THE SUBMITTED TEXT
+================================================================================
+The block number above is wrong. The deployment landed in block 21302813, not 21302797, confirmed
+by reading the receipt of 0x4d07061d...5b1b70 from the chain:
+
+  eth_getTransactionReceipt -> blockNumber 0x1450a9d = 21302813, gasUsed 950308, status success
+
+The error originated in this repository's SUBMISSION.md, which carried 21302797 and was the source
+the field was filled from; deployment.json, written by the deploy script from the receipt itself,
+had 21302813 all along. SUBMISSION.md is now corrected.
+
+The live submission has not been edited. The transaction hash in the same sentence is correct, so
+anyone checking is taken straight to the real block, and disturbing a submission that is under
+review to correct sixteen blocks of drift is not a trade worth making. It is recorded here instead,
+because a project whose argument is that every figure is measured rather than asserted does not get
+to quietly drop the one figure it asserted.
