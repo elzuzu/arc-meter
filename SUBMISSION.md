@@ -1,5 +1,9 @@
 # Arc Microgrants submission — ArcMeter
 
+**Submitted 2026-09-17 as BUIDL [48824](https://dorahacks.io/buidl/48824), under review.** What was
+actually entered in each field — including the two the form would not accept — is recorded in
+[`docs/buidl-form-state.md`](docs/buidl-form-state.md).
+
 Portal: **DoraHacks** — <https://dorahacks.io/hackathon/arc-microgrants>
 
 Deadline: **14 October 2026, 23:59 ET**. Reviews are rolling; every decision is issued by
@@ -21,8 +25,8 @@ BUIDL → ArcMeter. The track selector is the tell that you are in the right flo
 | GitHub | `https://github.com/elzuzu/arc-meter` |
 | Project website | `https://elzuzu.github.io/arc-meter/` |
 | Social link 1 | `https://github.com/elzuzu` |
-| Logo | `docs/logo.png` (480×480 — the slot centre-crops anything wider) |
-| Cover | `docs/cover.png` (1200×630) |
+| Logo | `docs/logo.png` (square — the slot centre-crops anything wider) |
+| Cover | `docs/cover.png` was produced at 1200×630 and **never used**: the form has no cover field, in either the creation flow or "Edit BUIDL profile" |
 
 ## Step 2 — Details
 
@@ -75,6 +79,11 @@ node ../scripts/verify-deployment.mjs   # 17 checks, re-derived from the chain
 ### Stack / tags
 
 `Solidity` · `Foundry` · `Arc` · `USDC` · `EVM` · `gas` · `public good` · `no dependencies`
+
+**None of these could be entered.** The form has no free-tag field; its nearest equivalent, "Key
+innovation domains", is a closed vocabulary where `Solidity` returns "No available options", and the
+"Layer-1s" list does not contain `Arc`. The only taxonomy the submission carries is the required
+category, `Crypto / Web3`.
 
 ## Step 3 — Team information
 
